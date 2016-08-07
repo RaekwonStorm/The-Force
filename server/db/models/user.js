@@ -7,11 +7,20 @@ var db = require('../_db');
 
 module.exports = db.define('user', {
     user_name: {
-        type: Sequelize.STRING,
-        unique: true
+        type: Sequelize.STRING
+    },
+    user_id: {
+        type: Sequelize.STRING
+    },
+    email: {
+        type: Sequelize.STRING
+    },
+    team_id: {
+        type: Sequelize.STRING
     },
     points: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        defaultValue: 0
     }
 }, {
     instanceMethods: {

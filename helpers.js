@@ -1,77 +1,54 @@
-var db = require('./server/db');
-var User = db.model('user');
-var Team = db.model('team');
+
 
 // helper functions
 
 // refactor these using regex
 module.exports = {
 
-  parseAlignment: function (arr) {
-    if (arr.includes("dark") && !arr.includes("light")) return 'dark'
-    else if (arr.includes('light') && !arr.includes('dark')) return 'light'
-    else return undefined;
+  parseAlignment: function (str) {
+    var darkRe = /[Dd][Aa][Rr][Kk]+/g
+    var lightRe = /[Ll][Ii][Gg][Hh][Tt]+/g
+    var isLight = lightRe.test(str);
+    var isDark = darkRe.test(str);
+    var alignment = undefined
+
+    if (isDark && !isLight) alignment = 'dark';
+    else if (isLight && !isDark) alignment = 'light';
+
+    return alignment;
   },
 
-  parsePoints: function (arr) {
-    var points = arr.filter(function (element) {
-      if (parseInt(element).toString() !== "NaN") {
-        return parseInt(element);
-      }
-    });
+  parsePoints: function (str) {
+    var numReg = /\d+/g
+    var numArr = str.match(numReg);
+    var points = undefined;
+    var alignment = this.parseAlignment(str);
 
-    if (points.length !== 1) return undefined
+    if (numArr && numArr.length === 1) {
+      if (numArr[0] > 100) numArr[0] = 100;
+      if (alignment === "light") points = Math.round(numArr[0]/10);
+      if (alignment === "dark") points = Math.round(-(numArr[0]/10));
+    }
 
-    return points[0];
+    return points;
   },
 
-  findOrCreateTeam: function (domain, id) {
-    return Team.findOrCreate({where: {team_domain: domain, team_id: id}})
-      .spread(function (team, created) {
-        return team;
-      });
+  parseReq: function (str) {
+    return {
+      alignment: this.parseAlignment(str),
+      points: this.parsePoints(str),
+      user: this.parseUser(str)
+    }
   },
 
-  findOrCreateUser: function (username, teamId, points) {
-    return User.findOrCreate({where: {user_name: username, teamId: teamId, points: points}})
-      .spread(function (user, created) {
-        if (!created) user.update
-        else return user;
-      })
-  },
+  parseUser: function (str) {
+    var userRe = /@\w+/g;
+    var userArr = str.match(userRe);
+    var user = undefined;
 
-  requestParser: function (str) {
-    var alignment,
-    points,
-    user;
+    if (userArr && userArr.length === 1) user = userArr[0].slice(1);
 
-    var strArr = str.split(" ");
-    var darkRe = '/[Dd][Aa][Rr][Kk]+/g'
-    var lightRe = '/[Ll][Ii][Gg][Hh][Tt]+/g'
-    var points = '/\d+/g'
-    var userArr = parseFindUser(strArr);
-
-    console.log(userArr);
-
-  },
-
-
-  // Refactor parseFindUser to check against a cached
-  // array of all the users for whatever channel.
-
-  parseFindUser: function (arr) {
-
-    var userArr = arr.map(function(element) {
-      return User.findOne({where: {
-        user_name: element
-        }
-      })
-      .then(function (user) {
-        return user
-      })
-    })
-
-    return userArr;
-
+    return user;
   }
+
 };
